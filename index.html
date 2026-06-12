@@ -2,80 +2,46 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NHICODE KEY SYSTEM</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        body { background: #121212; color: #00ffff; font-family: sans-serif; text-align: center; padding: 20px; }
-        .box { background: #1e1e1e; border: 1px solid #00ffff; border-radius: 10px; padding: 20px; margin-top: 50px; }
-        .key { color: #00ff00; font-size: 24px; font-weight: bold; margin: 20px 0; word-break: break-all; }
+        body { background: #121212; color: #00ffff; text-align: center; font-family: Arial; }
+        .box { margin-top: 50px; padding: 20px; border: 1px solid #00ffff; border-radius: 10px; }
     </style>
 </head>
 <body>
+    <div class="box">
+        <h2 id="keyDisplay">Đang xác thực thiết bị...</h2>
+    </div>
 
-<div class="box">
-    <h2>🔑 NHICODE KEY</h2>
-    <div id="keyDisplay" class="key">Đang xác thực...</div>
-    <p id="statusMsg">Vui lòng chờ trong giây lát...</p>
-</div>
+    <script>
+        const supabase = supabase.createClient('https://lkccrljfsjdahahkvjso.supabase.co', 'sb_publishable_pjKafP6hlWM_mopiF-daeA_HJXASiwk');
 
-<script>
-    // CẤU HÌNH SUPABASE (Thay lại thông tin của bạn nếu cần)
-    const SUPABASE_URL = 'https://lkccrljfsjdahahkvjso.supabase.co';
-    const SUPABASE_KEY = 'sb_publishable_pjKafP6hlWM_mopiF-daeA_HJXASiwk';
-    const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        async function generateKey() {
+            const token = new URLSearchParams(window.location.search).get('token');
+            if (!token) { document.getElementById('keyDisplay').innerText = "LỖI: THIẾU TOKEN"; return; }
 
-    async function generateKey() {
-        const urlParams = new URLSearchParams(window.location.search);
-        const uid = urlParams.get('uid');
-        const token = urlParams.get('token');
-
-        const display = document.getElementById('keyDisplay');
-        const status = document.getElementById('statusMsg');
-
-        if (!uid || !token) {
-            display.innerText = "LỖI";
-            status.innerText = "Không tìm thấy dữ liệu thiết bị. Hãy lấy link từ menu Tweak.";
-            return;
-        }
-
-        try {
-            // 1. Kiểm tra Token
+            // 1. Lấy device_id từ bảng tokens_table
             const { data: tokenData } = await supabase
                 .from('tokens_table')
-                .select('*')
+                .select('device_id')
                 .eq('token_value', token)
                 .single();
 
-            if (!tokenData) {
-                display.innerText = "HẾT HẠN";
-                status.innerText = "Token đã được sử dụng hoặc hết hạn.";
-                return;
-            }
+            if (!tokenData) { document.getElementById('keyDisplay').innerText = "TOKEN HẾT HẠN"; return; }
 
-            // 2. Tạo Key mới
+            const uid = tokenData.device_id;
             const newKey = "NC-" + Math.random().toString(36).substring(2, 10).toUpperCase();
 
-            // 3. Lưu Key vào Database keys_table
-            const { error: insertError } = await supabase
-                .from('keys_table')
-                .insert([{ key_value: newKey, device_id: uid }]);
-
-            if (insertError) throw insertError;
-
-            // 4. Xóa Token sau khi tạo Key thành công
+            // 2. Lưu Key với đúng UID vào keys_table
+            await supabase.from('keys_table').insert([{ key_value: newKey, device_id: uid }]);
+            
+            // 3. Xóa token để tránh dùng lại
             await supabase.from('tokens_table').delete().eq('token_value', token);
 
-            display.innerText = newKey;
-            status.innerText = "✅ COPY KEY NÀY DÁN VÀO MENU TWEAK";
-        } catch (err) {
-            console.error(err);
-            display.innerText = "LỖI HỆ THỐNG";
-            status.innerText = "Vui lòng thử lại sau.";
+            document.getElementById('keyDisplay').innerText = "KEY CỦA BẠN: " + newKey;
         }
-    }
-
-    generateKey();
-</script>
+        generateKey();
+    </script>
 </body>
 </html>
