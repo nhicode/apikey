@@ -6,115 +6,137 @@
     <title>Hệ Thống Lấy Key</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        body {
-            background-color: #121212;
-            color: #ffffff;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
-        }
-        .container {
-            background-color: #1e1e1e;
-            padding: 30px;
-            border-radius: 12px;
-            box-shadow: 0 4px 15px rgba(0,255,255,0.2);
-            text-align: center;
-            width: 300px;
-            border: 1px solid #00ffff;
-        }
-        h2 {
-            margin-top: 0;
-            color: #00ffff;
-        }
-        .key-box {
-            background-color: #2d2d2d;
-            padding: 15px;
-            border-radius: 8px;
-            font-size: 20px;
-            letter-spacing: 2px;
-            margin: 20px 0;
-            user-select: all;
-            word-break: break-all;
-            color: #00ff00;
-        }
-        button {
-            background-color: #00ffff;
-            color: #000;
-            border: none;
-            padding: 10px 20px;
-            font-size: 16px;
-            font-weight: bold;
-            border-radius: 6px;
-            cursor: pointer;
-            width: 100%;
-        }
-        button:active {
-            transform: scale(0.98);
-        }
-        .loading {
-            color: #aaaaaa;
-            font-style: italic;
-        }
+        body { background-color: #121212; color: #ffffff; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .container { background-color: #1e1e1e; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,255,255,0.2); text-align: center; width: 320px; border: 1px solid #00ffff; }
+        h2 { margin-top: 0; color: #00ffff; font-size: 24px; }
+        .key-box { background-color: #2d2d2d; padding: 15px; border-radius: 8px; font-size: 18px; letter-spacing: 1px; margin: 20px 0; font-weight: bold; word-break: break-all; }
+        .success { color: #00ff00; }
+        .error { color: #ff4444; }
+        .warning { color: #ffaa00; }
+        button { background-color: #00ffff; color: #000; border: none; padding: 12px 20px; font-size: 16px; font-weight: bold; border-radius: 6px; cursor: pointer; width: 100%; transition: 0.2s; }
+        button:active { transform: scale(0.95); }
+        .desc { font-size: 13px; color: #aaaaaa; margin-top: 15px; }
     </style>
 </head>
 <body>
 
 <div class="container">
     <h2>🔑 KEY CỦA BẠN 🔑</h2>
-    <div id="keyDisplay" class="key-box">
-        <span class="loading">Đang tải key...</span>
-    </div>
+    <div id="keyDisplay" class="key-box warning">Đang kiểm tra bảo mật...</div>
     <button onclick="copyKey()">Sao chép Key</button>
+    <div id="statusMsg" class="desc">Vui lòng đợi trong giây lát</div>
 </div>
 
 <script>
+    // Thông tin Database của bạn
     const SUPABASE_URL = 'https://lkccrljfsjdahahkvjso.supabase.co';
     const SUPABASE_ANON_KEY = 'sb_publishable_pjKafP6hlWM_mopiF-daeA_HJXASiwk';
-
-    // ĐÃ SỬA LỖI TẠI ĐÂY: Đổi tên biến thành supabaseClient
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    async function fetchKey() {
+    // Hàm tạo mã Key ngẫu nhiên
+    function generateRandomKey() {
+        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+        let result = 'NHICODE-';
+        for (let i = 0; i < 10; i++) {
+            result += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+        return result;
+    }
+
+    async function processKeySystem() {
         const keyDisplay = document.getElementById('keyDisplay');
+        const statusMsg = document.getElementById('statusMsg');
         
+        // 1. Lấy thông số từ đường link
+        const urlParams = new URLSearchParams(window.location.search);
+        const deviceId = urlParams.get('uid');
+        const token = urlParams.get('token');
+
+        if (!deviceId || !token) {
+            keyDisplay.className = "key-box error";
+            keyDisplay.innerText = "⛔ TRUY CẬP TỪ CHỐI ⛔";
+            statusMsg.innerText = "Vui lòng mở link từ trong Menu Tweak!";
+            statusMsg.style.color = "#ff4444";
+            return;
+        }
+
         try {
-            // SỬA LẠI ĐÂY THÀNH supabaseClient
-            const { data, error } = await supabaseClient
+            // 2. KIỂM TRA TOKEN (Chống F5/Reload)
+            const { data: tokenData, error: tokenError } = await supabaseClient
+                .from('tokens_table')
+                .select('token_value')
+                .eq('token_value', token);
+
+            if (tokenError) throw tokenError;
+
+            // Nếu không tìm thấy Token -> Người dùng đang cố tải lại trang cũ
+            if (!tokenData || tokenData.length === 0) {
+                keyDisplay.className = "key-box error";
+                keyDisplay.innerText = "⛔ LINK ĐÃ HẾT HẠN ⛔";
+                statusMsg.innerText = "Bạn đã dùng link này rồi. Quay lại game để lấy link mới!";
+                statusMsg.style.color = "#ff4444";
+                return;
+            }
+
+            // 3. XÓA TOKEN NGAY LẬP TỨC (Xé vé)
+            await supabaseClient.from('tokens_table').delete().eq('token_value', token);
+
+            // 4. KIỂM TRA XEM MÁY NÀY ĐÃ CÓ KEY TRONG 3 NGÀY QUA CHƯA
+            let threeDaysAgo = new Date();
+            threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
+            
+            const { data: existingData, error: fetchError } = await supabaseClient
                 .from('keys_table')
-                .select('key_value')
-                .eq('is_used', false)
+                .select('key_value, created_at')
+                .eq('device_id', deviceId)
+                .gte('created_at', threeDaysAgo.toISOString())
+                .order('created_at', { ascending: false })
                 .limit(1);
 
-            if (error) throw error;
+            if (fetchError) throw fetchError;
 
-            if (data && data.length > 0) {
-                keyDisplay.innerText = data[0].key_value;
-            } else {
-                keyDisplay.innerText = "Hết Key. Vui lòng thử lại sau!";
-                keyDisplay.style.color = "red";
+            // NẾU ĐÃ CÓ KEY CÒN HẠN -> TRẢ LẠI KEY CŨ
+            if (existingData && existingData.length > 0) {
+                keyDisplay.className = "key-box success";
+                keyDisplay.innerText = existingData[0].key_value;
+                statusMsg.innerText = "Key cũ của bạn vẫn còn hạn sử dụng.";
+                return;
             }
+
+            // NẾU CHƯA CÓ HOẶC ĐÃ QUÁ 3 NGÀY -> TẠO KEY MỚI
+            statusMsg.innerText = "Đang tạo mã key mới...";
+            const newKey = generateRandomKey();
+
+            const { error: insertError } = await supabaseClient
+                .from('keys_table')
+                .insert([{ key_value: newKey, device_id: deviceId, is_used: true }]);
+
+            if (insertError) throw insertError;
+
+            keyDisplay.className = "key-box success";
+            keyDisplay.innerText = newKey;
+            statusMsg.innerText = "Tạo Key mới thành công! Thời hạn: 3 ngày.";
+
         } catch (err) {
             console.error(err);
-            keyDisplay.innerText = "Lỗi kết nối máy chủ!";
-            keyDisplay.style.color = "red";
+            keyDisplay.className = "key-box error";
+            keyDisplay.innerText = "LỖI MÁY CHỦ";
+            statusMsg.innerText = "Vui lòng thử lại sau.";
         }
     }
 
     function copyKey() {
         const keyText = document.getElementById('keyDisplay').innerText;
-        if (keyText === "Hết Key. Vui lòng thử lại sau!" || keyText === "Đang tải key..." || keyText === "Lỗi kết nối máy chủ!") {
-            alert("Không có key để copy!");
+        if (keyText.includes("⛔") || keyText.includes("LỖI") || keyText.includes("Đang")) {
+            alert("Không có key hợp lệ để copy!");
             return;
         }
         navigator.clipboard.writeText(keyText).then(() => {
-            alert("Đã sao chép: " + keyText);
+            document.getElementById('statusMsg').innerText = "✅ Đã sao chép vào khay nhớ tạm!";
         });
     }
 
-    window.onload = fetchKey;
+    window.onload = processKeySystem;
 </script>
 
 </body>
