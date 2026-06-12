@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hệ Thống Lấy Key</title>
+    <title>Hệ Thống Lấy Key - NHICODE</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         body { background-color: #121212; color: #ffffff; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
@@ -23,17 +23,15 @@
 <div class="container">
     <h2>🔑 KEY CỦA BẠN 🔑</h2>
     <div id="keyDisplay" class="key-box warning">Đang kiểm tra bảo mật...</div>
-    <button onclick="copyKey()">Sao chép Key</button>
-    <div id="statusMsg" class="desc">Vui lòng đợi trong giây lát</div>
+    <button onclick="copyKey()">⚠️ Sao chép Key ⚠️</button>
+    <div id="statusMsg" class="desc">Vui lòng đợi trong giây lát...</div>
 </div>
 
 <script>
-    // Thông tin Database của bạn
     const SUPABASE_URL = 'https://lkccrljfsjdahahkvjso.supabase.co';
     const SUPABASE_ANON_KEY = 'sb_publishable_pjKafP6hlWM_mopiF-daeA_HJXASiwk';
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    // Hàm tạo mã Key ngẫu nhiên
     function generateRandomKey() {
         const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
         let result = 'NHICODE-';
@@ -47,21 +45,20 @@
         const keyDisplay = document.getElementById('keyDisplay');
         const statusMsg = document.getElementById('statusMsg');
         
-        // 1. Lấy thông số từ đường link
         const urlParams = new URLSearchParams(window.location.search);
         const deviceId = urlParams.get('uid');
         const token = urlParams.get('token');
 
         if (!deviceId || !token) {
             keyDisplay.className = "key-box error";
-            keyDisplay.innerText = "⛔ TRUY CẬP TỪ CHỐI ⛔";
-            statusMsg.innerText = "Vui lòng mở link từ trong Menu Tweak!";
+            keyDisplay.innerText = "⛔ TRUY CẬP BỊ CHẶN ⛔";
+            statusMsg.innerText = "Vui lòng bấm 'Get Key' từ trong Menu Tweak!";
             statusMsg.style.color = "#ff4444";
             return;
         }
 
         try {
-            // 2. KIỂM TRA TOKEN (Chống F5/Reload)
+            // 1. KIỂM TRA TOKEN (Chống vượt rào / F5)
             const { data: tokenData, error: tokenError } = await supabaseClient
                 .from('tokens_table')
                 .select('token_value')
@@ -69,25 +66,24 @@
 
             if (tokenError) throw tokenError;
 
-            // Nếu không tìm thấy Token -> Người dùng đang cố tải lại trang cũ
             if (!tokenData || tokenData.length === 0) {
                 keyDisplay.className = "key-box error";
                 keyDisplay.innerText = "⛔ LINK ĐÃ HẾT HẠN ⛔";
-                statusMsg.innerText = "Bạn đã dùng link này rồi. Quay lại game để lấy link mới!";
+                statusMsg.innerText = "Mã token đã sử dụng hoặc bạn vừa tải lại trang. Hãy vào game lấy link mới!";
                 statusMsg.style.color = "#ff4444";
                 return;
             }
 
-            // 3. XÓA TOKEN NGAY LẬP TỨC (Xé vé)
+            // 2. HỦY TOKEN NGAY (Xé vé chống dùng lại)
             await supabaseClient.from('tokens_table').delete().eq('token_value', token);
 
-            // 4. KIỂM TRA XEM MÁY NÀY ĐÃ CÓ KEY TRONG 3 NGÀY QUA CHƯA
+            // 3. CHECK XEM MÁY NÀY ĐÃ CÓ KEY CÒN HẠN (3 ngày) TRÊN DATABASE CHƯA
             let threeDaysAgo = new Date();
             threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
             
             const { data: existingData, error: fetchError } = await supabaseClient
                 .from('keys_table')
-                .select('key_value, created_at')
+                .select('key_value')
                 .eq('device_id', deviceId)
                 .gte('created_at', threeDaysAgo.toISOString())
                 .order('created_at', { ascending: false })
@@ -95,16 +91,16 @@
 
             if (fetchError) throw fetchError;
 
-            // NẾU ĐÃ CÓ KEY CÒN HẠN -> TRẢ LẠI KEY CŨ
+            // Nếu thiết bị này đã lấy key trước đó và vẫn còn hạn -> Hiện lại key đó luôn
             if (existingData && existingData.length > 0) {
                 keyDisplay.className = "key-box success";
                 keyDisplay.innerText = existingData[0].key_value;
-                statusMsg.innerText = "Key cũ của bạn vẫn còn hạn sử dụng.";
+                statusMsg.innerText = "Key của thiết bị này vẫn còn hiệu lực.";
                 return;
             }
 
-            // NẾU CHƯA CÓ HOẶC ĐÃ QUÁ 3 NGÀY -> TẠO KEY MỚI
-            statusMsg.innerText = "Đang tạo mã key mới...";
+            // Nếu máy chưa có key hoặc key cũ quá 3 ngày -> Tiến hành cấp key mới ngẫu nhiên
+            statusMsg.innerText = "Đang sinh mã key mới cho thiết bị...";
             const newKey = generateRandomKey();
 
             const { error: insertError } = await supabaseClient
@@ -115,24 +111,24 @@
 
             keyDisplay.className = "key-box success";
             keyDisplay.innerText = newKey;
-            statusMsg.innerText = "Tạo Key mới thành công! Thời hạn: 3 ngày.";
+            statusMsg.innerText = "Tạo Key thành công! Mỗi key chỉ dùng cho 1 thiết bị duy nhất.";
 
         } catch (err) {
             console.error(err);
             keyDisplay.className = "key-box error";
-            keyDisplay.innerText = "LỖI MÁY CHỦ";
-            statusMsg.innerText = "Vui lòng thử lại sau.";
+            keyDisplay.innerText = "LỖI KẾT NỐI MÁY CHỦ";
+            statusMsg.innerText = "Vui lòng bấm lấy lại key sau ít phút.";
         }
     }
 
     function copyKey() {
         const keyText = document.getElementById('keyDisplay').innerText;
         if (keyText.includes("⛔") || keyText.includes("LỖI") || keyText.includes("Đang")) {
-            alert("Không có key hợp lệ để copy!");
+            alert("Không có cấu trúc key hợp lệ!");
             return;
         }
         navigator.clipboard.writeText(keyText).then(() => {
-            document.getElementById('statusMsg').innerText = "✅ Đã sao chép vào khay nhớ tạm!";
+            document.getElementById('statusMsg').innerText = "✅ Đã copy! Hãy dán vào Menu để kích hoạt.";
         });
     }
 
