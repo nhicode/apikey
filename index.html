@@ -2,46 +2,82 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NHICODE KEY SYSTEM</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        body { background: #121212; color: #00ffff; text-align: center; font-family: Arial; }
-        .box { margin-top: 50px; padding: 20px; border: 1px solid #00ffff; border-radius: 10px; }
+        body { background-color: #0f0f0f; color: #00ffff; font-family: 'Courier New', Courier, monospace; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .card { background: #1a1a1a; border: 2px solid #00ffff; border-radius: 15px; padding: 30px; width: 320px; text-align: center; box-shadow: 0 0 20px rgba(0,255,255,0.2); }
+        h2 { margin-top: 0; color: #fff; }
+        #keyDisplay { font-size: 20px; font-weight: bold; color: #00ff00; word-break: break-all; margin: 20px 0; padding: 10px; background: #000; border-radius: 5px; }
+        .status { font-size: 14px; color: #888; }
     </style>
 </head>
 <body>
-    <div class="box">
-        <h2 id="keyDisplay">Đang xác thực thiết bị...</h2>
-    </div>
 
-    <script>
-        const supabase = supabase.createClient('https://lkccrljfsjdahahkvjso.supabase.co', 'sb_publishable_pjKafP6hlWM_mopiF-daeA_HJXASiwk');
+<div class="card">
+    <h2>🔑 NHICODE KEY</h2>
+    <div id="keyDisplay">Đang kết nối...</div>
+    <div id="statusMsg" class="status">Vui lòng chờ xác thực thiết bị</div>
+</div>
 
-        async function generateKey() {
-            const token = new URLSearchParams(window.location.search).get('token');
-            if (!token) { document.getElementById('keyDisplay').innerText = "LỖI: THIẾU TOKEN"; return; }
+<script>
+    // Cấu hình Supabase (Cần khớp với Tweak.xm)
+    const sb = supabase.createClient(
+        'https://lkccrljfsjdahahkvjso.supabase.co', 
+        'sb_publishable_pjKafP6hlWM_mopiF-daeA_HJXASiwk'
+    );
 
-            // 1. Lấy device_id từ bảng tokens_table
-            const { data: tokenData } = await supabase
-                .from('tokens_table')
-                .select('device_id')
-                .eq('token_value', token)
-                .single();
-
-            if (!tokenData) { document.getElementById('keyDisplay').innerText = "TOKEN HẾT HẠN"; return; }
-
-            const uid = tokenData.device_id;
-            const newKey = "NC-" + Math.random().toString(36).substring(2, 10).toUpperCase();
-
-            // 2. Lưu Key với đúng UID vào keys_table
-            await supabase.from('keys_table').insert([{ key_value: newKey, device_id: uid }]);
-            
-            // 3. Xóa token để tránh dùng lại
-            await supabase.from('tokens_table').delete().eq('token_value', token);
-
-            document.getElementById('keyDisplay').innerText = "KEY CỦA BẠN: " + newKey;
+    async function runKeySystem() {
+        const display = document.getElementById('keyDisplay');
+        const msg = document.getElementById('statusMsg');
+        
+        // 1. Lấy token từ URL
+        const token = new URLSearchParams(window.location.search).get('token');
+        if (!token) {
+            display.innerText = "LỖI";
+            msg.innerText = "Không tìm thấy Token hợp lệ.";
+            return;
         }
-        generateKey();
-    </script>
+
+        try {
+            // 2. Tìm device_id từ token tạm
+            const { data: t, error: tErr } = await sb.from('tokens_table').select('device_id').eq('token_value', token).single();
+            if (tErr || !t) {
+                display.innerText = "HẾT HẠN";
+                msg.innerText = "Token này đã được sử dụng hoặc không tồn tại.";
+                return;
+            }
+
+            const uid = t.device_id;
+
+            // 3. Kiểm tra xem thiết bị này đã có Key chưa
+            const { data: exist } = await sb.from('keys_table').select('key_value').eq('device_id', uid).single();
+            if (exist) {
+                display.innerText = exist.key_value;
+                msg.innerText = "KEY CŨ CỦA BẠN (Đã tồn tại)";
+                return;
+            }
+
+            // 4. Tạo Key mới nếu chưa có
+            const newKey = "NC-" + Math.random().toString(36).substring(2, 10).toUpperCase();
+            
+            // Lưu Key vào DB
+            await sb.from('keys_table').insert([{ key_value: newKey, device_id: uid }]);
+            
+            // Xóa token đi để chống dùng lại
+            await sb.from('tokens_table').delete().eq('token_value', token);
+
+            display.innerText = newKey;
+            msg.innerText = "✅ CẤP KEY THÀNH CÔNG";
+        } catch (err) {
+            display.innerText = "LỖI HỆ THỐNG";
+            msg.innerText = "Kiểm tra lại Database hoặc API Key.";
+        }
+    }
+
+    runKeySystem();
+</script>
+
 </body>
 </html>
