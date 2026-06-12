@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hệ Thống Lấy Key</title>
+    <!-- Tải thư viện Supabase JS -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body {
+            background-color: #121212;
+            color: #ffffff;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .container {
+            background-color: #1e1e1e;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,255,255,0.2);
+            text-align: center;
+            width: 300px;
+            border: 1px solid #00ffff;
+        }
+        h2 {
+            margin-top: 0;
+            color: #00ffff;
+        }
+        .key-box {
+            background-color: #2d2d2d;
+            padding: 15px;
+            border-radius: 8px;
+            font-size: 20px;
+            letter-spacing: 2px;
+            margin: 20px 0;
+            user-select: all;
+            word-break: break-all;
+            color: #00ff00;
+        }
+        button {
+            background-color: #00ffff;
+            color: #000;
+            border: none;
+            padding: 10px 20px;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 6px;
+            cursor: pointer;
+            width: 100%;
+        }
+        button:active {
+            transform: scale(0.98);
+        }
+        .loading {
+            color: #aaaaaa;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>🔑 KEY CỦA BẠN 🔑</h2>
+    <div id="keyDisplay" class="key-box">
+        <span class="loading">Đang tải key...</span>
+    </div>
+    <button onclick="copyKey()">Sao chép Key</button>
+</div>
+
+<script>
+    // --- ĐIỀN THÔNG TIN SUPABASE CỦA BẠN VÀO ĐÂY ---
+    const SUPABASE_URL = 'https://xyz.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsIn...';
+    // ----------------------------------------------
+
+    const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    async function fetchKey() {
+        const keyDisplay = document.getElementById('keyDisplay');
+        
+        try {
+            // Lấy 1 Key ngẫu nhiên có is_used = false
+            const { data, error } = await supabase
+                .from('keys_table')
+                .select('key_value')
+                .eq('is_used', false)
+                .limit(1);
+
+            if (error) throw error;
+
+            if (data && data.length > 0) {
+                // Hiển thị key lên màn hình
+                keyDisplay.innerText = data[0].key_value;
+            } else {
+                keyDisplay.innerText = "Hết Key. Vui lòng thử lại sau!";
+                keyDisplay.style.color = "red";
+            }
+        } catch (err) {
+            console.error(err);
+            keyDisplay.innerText = "Lỗi kết nối máy chủ!";
+            keyDisplay.style.color = "red";
+        }
+    }
+
+    function copyKey() {
+        const keyText = document.getElementById('keyDisplay').innerText;
+        if (keyText === "Hết Key. Vui lòng thử lại sau!" || keyText === "Đang tải key..." || keyText === "Lỗi kết nối máy chủ!") {
+            alert("Không có key để copy!");
+            return;
+        }
+        navigator.clipboard.writeText(keyText).then(() => {
+            alert("Đã sao chép: " + keyText);
+        });
+    }
+
+    // Tự động chạy hàm lấy key khi load web
+    window.onload = fetchKey;
+</script>
+
+</body>
+</html>
