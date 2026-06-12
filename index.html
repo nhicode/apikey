@@ -2,82 +2,66 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NHICODE KEY SYSTEM</title>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <title>CHISATO KEY SYSTEM</title>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
     <style>
-        body { background-color: #0f0f0f; color: #00ffff; font-family: 'Courier New', Courier, monospace; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-        .card { background: #1a1a1a; border: 2px solid #00ffff; border-radius: 15px; padding: 30px; width: 320px; text-align: center; box-shadow: 0 0 20px rgba(0,255,255,0.2); }
-        h2 { margin-top: 0; color: #fff; }
-        #keyDisplay { font-size: 20px; font-weight: bold; color: #00ff00; word-break: break-all; margin: 20px 0; padding: 10px; background: #000; border-radius: 5px; }
-        .status { font-size: 14px; color: #888; }
+        body { background: #0a0a0a; color: #ff0055; font-family: 'Segoe UI', sans-serif; display: flex; justify-content: center; padding-top: 50px; }
+        .box { background: #161616; padding: 30px; border-left: 5px solid #ff0055; border-radius: 10px; width: 350px; text-align: center; }
+        .key-box { background: #000; padding: 15px; margin: 20px 0; font-size: 20px; color: #00ff00; border: 1px solid #333; }
     </style>
 </head>
 <body>
-
-<div class="card">
-    <h2>🔑 NHICODE KEY</h2>
-    <div id="keyDisplay">Đang kết nối...</div>
-    <div id="statusMsg" class="status">Vui lòng chờ xác thực thiết bị</div>
+<div class="box">
+    <h2>CHISATO KEY SYSTEM</h2>
+    <div id="ui">Đang xác thực...</div>
 </div>
 
 <script>
-    // Cấu hình Supabase (Cần khớp với Tweak.xm)
-    const sb = supabase.createClient(
-        'https://lkccrljfsjdahahkvjso.supabase.co', 
-        'sb_publishable_pjKafP6hlWM_mopiF-daeA_HJXASiwk'
-    );
+    const firebaseConfig = { databaseURL: "https://apikey-b4435-default-rtdb.firebaseio.com/" };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
 
-    async function runKeySystem() {
-        const display = document.getElementById('keyDisplay');
-        const msg = document.getElementById('statusMsg');
-        
-        // 1. Lấy token từ URL
-        const token = new URLSearchParams(window.location.search).get('token');
-        if (!token) {
-            display.innerText = "LỖI";
-            msg.innerText = "Không tìm thấy Token hợp lệ.";
+    const params = new URLSearchParams(window.location.search);
+    const uid = params.get('uid');
+
+    async function init() {
+        if (!uid || sessionStorage.getItem('processed')) {
+            document.getElementById('ui').innerHTML = "⛔ TRUY CẬP KHÔNG HỢP LỆ HOẶC ĐÃ RELOAD";
             return;
         }
 
-        try {
-            // 2. Tìm device_id từ token tạm
-            const { data: t, error: tErr } = await sb.from('tokens_table').select('device_id').eq('token_value', token).single();
-            if (tErr || !t) {
-                display.innerText = "HẾT HẠN";
-                msg.innerText = "Token này đã được sử dụng hoặc không tồn tại.";
-                return;
+        const ref = db.ref('keys/' + uid);
+        const snapshot = await ref.once('value');
+        const now = Date.now();
+
+        // 1. Kiểm tra Key cũ
+        if (snapshot.exists()) {
+            const data = snapshot.val();
+            if (now < data.expires_at) {
+                showKey(data.key);
+            } else {
+                await ref.remove(); // Hết hạn thì xóa
+                createKey(ref, now);
             }
-
-            const uid = t.device_id;
-
-            // 3. Kiểm tra xem thiết bị này đã có Key chưa
-            const { data: exist } = await sb.from('keys_table').select('key_value').eq('device_id', uid).single();
-            if (exist) {
-                display.innerText = exist.key_value;
-                msg.innerText = "KEY CŨ CỦA BẠN (Đã tồn tại)";
-                return;
-            }
-
-            // 4. Tạo Key mới nếu chưa có
-            const newKey = "NC-" + Math.random().toString(36).substring(2, 10).toUpperCase();
-            
-            // Lưu Key vào DB
-            await sb.from('keys_table').insert([{ key_value: newKey, device_id: uid }]);
-            
-            // Xóa token đi để chống dùng lại
-            await sb.from('tokens_table').delete().eq('token_value', token);
-
-            display.innerText = newKey;
-            msg.innerText = "✅ CẤP KEY THÀNH CÔNG";
-        } catch (err) {
-            display.innerText = "LỖI HỆ THỐNG";
-            msg.innerText = "Kiểm tra lại Database hoặc API Key.";
+        } else {
+            createKey(ref, now);
         }
     }
 
-    runKeySystem();
-</script>
+    async function createKey(ref, now) {
+        const newKey = "CHISATO_" + Math.random().toString(36).substr(2, 9).toUpperCase();
+        const expires = now + (3 * 24 * 60 * 60 * 1000); // 3 ngày
+        await ref.set({ key: newKey, created_at: now, expires_at: expires });
+        sessionStorage.setItem('processed', 'true'); // Chặn reload
+        showKey(newKey);
+    }
 
+    function showKey(k) {
+        document.getElementById('ui').innerHTML = `<div>KEY CỦA BẠN:</div><div class="key-box">${k}</div><p style="font-size:12px">Hạn: 3 ngày</p>`;
+    }
+
+    init();
+</script>
 </body>
 </html>
