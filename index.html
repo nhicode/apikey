@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Hệ Thống Lấy Key</title>
-    <!-- Tải thư viện Supabase JS -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         body {
@@ -72,19 +71,18 @@
 </div>
 
 <script>
-    // --- THÔNG TIN SUPABASE ĐÃ ĐƯỢC CẬP NHẬT ---
     const SUPABASE_URL = 'https://lkccrljfsjdahahkvjso.supabase.co';
     const SUPABASE_ANON_KEY = 'sb_publishable_pjKafP6hlWM_mopiF-daeA_HJXASiwk';
-    // ------------------------------------------
 
-    const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    // ĐÃ SỬA LỖI TẠI ĐÂY: Đổi tên biến thành supabaseClient
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     async function fetchKey() {
         const keyDisplay = document.getElementById('keyDisplay');
         
         try {
-            // Lấy 1 Key ngẫu nhiên có is_used = false
-            const { data, error } = await supabase
+            // SỬA LẠI ĐÂY THÀNH supabaseClient
+            const { data, error } = await supabaseClient
                 .from('keys_table')
                 .select('key_value')
                 .eq('is_used', false)
@@ -93,7 +91,6 @@
             if (error) throw error;
 
             if (data && data.length > 0) {
-                // Hiển thị key lên màn hình
                 keyDisplay.innerText = data[0].key_value;
             } else {
                 keyDisplay.innerText = "Hết Key. Vui lòng thử lại sau!";
@@ -117,7 +114,6 @@
         });
     }
 
-    // Tự động chạy hàm lấy key khi load web
     window.onload = fetchKey;
 </script>
 
