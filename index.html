@@ -3,23 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Chisato — Lấy mã truy cập</title>
+    <title>Chisato — Key Portal</title>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
     <style>
-        /* ── TOKENS ────────────────────────────── */
         :root {
-            --red:     #ff0055;
-            --red-dk:  #c40042;
-            --green:   #00ff99;
-            --orange:  #ff9900;
-            --bg:      #07070c;
-            --card:    rgba(15, 15, 22, 0.93);
-            --border:  rgba(255, 0, 85, 0.16);
-            --muted:   rgba(255,255,255,0.32);
-            --r:       20px;
+            --red:    #ff0055;
+            --red-dk: #c40042;
+            --green:  #00ff99;
+            --orange: #ff9900;
+            --bg:     #07070c;
+            --card:   rgba(15,15,22,0.93);
+            --border: rgba(255,0,85,0.16);
+            --muted:  rgba(255,255,255,0.32);
         }
-
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
         body {
@@ -27,37 +24,29 @@
             color: #fff;
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
             min-height: 100svh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            display: flex; align-items: center; justify-content: center;
             overflow: hidden;
         }
-
-        /* ── AMBIENT BACKGROUND ───────────────── */
         body::before {
-            content: '';
-            position: fixed; inset: 0; z-index: 0;
+            content: ''; position: fixed; inset: 0; z-index: 0;
             background-image:
-                linear-gradient(rgba(255,0,85,.035) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(255,0,85,.035) 1px, transparent 1px);
+                linear-gradient(rgba(255,0,85,.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,0,85,.03) 1px, transparent 1px);
             background-size: 44px 44px;
             pointer-events: none;
         }
-        .glow-tr, .glow-bl {
+        .glow-a, .glow-b {
             position: fixed; border-radius: 50%;
             filter: blur(90px); pointer-events: none; z-index: 0;
         }
-        .glow-tr { width: 340px; height: 340px; top: -80px; right: -80px;
-            background: rgba(255,0,85,.11); }
-        .glow-bl { width: 280px; height: 280px; bottom: -70px; left: -70px;
-            background: rgba(110,0,255,.08); }
+        .glow-a { width:320px; height:320px; top:-80px; right:-80px; background:rgba(255,0,85,.10); }
+        .glow-b { width:260px; height:260px; bottom:-70px; left:-70px; background:rgba(110,0,255,.08); }
 
-        /* ── CARD ─────────────────────────────── */
+        /* ── CARD ── */
         .card {
             position: relative; z-index: 1;
             background: var(--card);
-            backdrop-filter: blur(30px);
-            -webkit-backdrop-filter: blur(30px);
+            backdrop-filter: blur(28px); -webkit-backdrop-filter: blur(28px);
             border: 1px solid var(--border);
             border-radius: 26px;
             padding: 34px 26px 28px;
@@ -66,384 +55,307 @@
                         0 0 0 .5px rgba(255,255,255,.04) inset;
             opacity: 0;
             transform: translateY(18px) scale(.975);
-            animation: rise .6s cubic-bezier(.16,1,.3,1) .08s forwards;
+            animation: rise .6s cubic-bezier(.16,1,.3,1) .05s forwards;
         }
+        @keyframes rise { to { opacity:1; transform:none; } }
 
-        @keyframes rise { to { opacity: 1; transform: none; } }
-
-        /* ── HEADER ───────────────────────────── */
-        .hd { text-align: center; margin-bottom: 22px; }
+        /* ── HEADER ── */
+        .hd { text-align:center; margin-bottom:20px; }
         .hd-icon {
-            display: inline-flex; align-items: center; justify-content: center;
-            width: 52px; height: 52px;
-            background: linear-gradient(145deg, rgba(255,0,85,.22), rgba(200,0,60,.1));
-            border: 1px solid rgba(255,0,85,.28);
-            border-radius: 15px; font-size: 22px;
-            box-shadow: 0 4px 18px rgba(255,0,85,.18);
-            margin-bottom: 13px;
+            display:inline-flex; align-items:center; justify-content:center;
+            width:52px; height:52px;
+            background:linear-gradient(145deg, rgba(255,0,85,.22), rgba(200,0,60,.1));
+            border:1px solid rgba(255,0,85,.28);
+            border-radius:15px; font-size:22px;
+            box-shadow:0 4px 18px rgba(255,0,85,.18);
+            margin-bottom:12px;
         }
         .hd-name {
-            font-size: 19px; font-weight: 800; letter-spacing: 3.5px;
-            text-transform: uppercase;
-            background: linear-gradient(100deg, #ff0055 10%, #ff5500 90%);
-            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-            background-clip: text;
+            font-size:19px; font-weight:800; letter-spacing:3.5px; text-transform:uppercase;
+            background:linear-gradient(100deg, #ff0055 10%, #ff5500 90%);
+            -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;
         }
-        .hd-tagline {
-            margin-top: 4px; font-size: 11px; font-weight: 500;
-            letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted);
-        }
+        .hd-sub { margin-top:4px; font-size:10px; font-weight:500; letter-spacing:2px; color:var(--muted); text-transform:uppercase; }
 
-        /* ── DIVIDER ──────────────────────────── */
-        .sep {
-            height: 1px;
-            background: linear-gradient(90deg, transparent, rgba(255,0,85,.22), transparent);
-            margin: 18px 0;
-        }
+        /* ── DIVIDER ── */
+        .sep { height:1px; background:linear-gradient(90deg,transparent,rgba(255,0,85,.22),transparent); margin:18px 0; }
 
-        /* ── STATUS PILL ──────────────────────── */
+        /* ── PILL ── */
         .pill {
-            display: inline-flex; align-items: center; gap: 6px;
-            padding: 4px 11px; border-radius: 40px;
-            font-size: 10px; font-weight: 700; letter-spacing: 1px;
-            text-transform: uppercase; margin-bottom: 13px;
+            display:inline-flex; align-items:center; gap:6px;
+            padding:4px 11px; border-radius:40px;
+            font-size:10px; font-weight:700; letter-spacing:1px; text-transform:uppercase; margin-bottom:13px;
         }
-        .pill.ok  { background: rgba(0,255,153,.1); border: 1px solid rgba(0,255,153,.28); color: var(--green); }
-        .pill.new { background: rgba(255,153,0,.1);  border: 1px solid rgba(255,153,0,.28);  color: var(--orange); }
-        .pill-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor;
-            animation: blink 1.4s ease-in-out infinite; }
+        .pill.ok  { background:rgba(0,255,153,.1); border:1px solid rgba(0,255,153,.28); color:var(--green); }
+        .pill.new { background:rgba(255,153,0,.1);  border:1px solid rgba(255,153,0,.28);  color:var(--orange); }
+        .pill-dot { width:6px; height:6px; border-radius:50%; background:currentColor; animation:blink 1.4s ease-in-out infinite; }
         @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.2} }
 
-        /* ── KEY BOX ──────────────────────────── */
+        /* ── KEY BOX ── */
         .key-box {
-            background: rgba(0,0,0,.45);
-            border: 1px solid rgba(255,0,85,.2);
-            border-radius: 15px;
-            padding: 18px 16px 15px;
-            margin: 4px 0 18px;
-            position: relative; overflow: hidden;
+            background:rgba(0,0,0,.45); border:1px solid rgba(255,0,85,.2);
+            border-radius:15px; padding:18px 16px 15px;
+            margin:4px 0 18px; position:relative; overflow:hidden;
         }
         .key-box::after {
-            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
-            background: linear-gradient(90deg, transparent, rgba(255,0,85,.45), transparent);
+            content:''; position:absolute; top:0; left:0; right:0; height:1px;
+            background:linear-gradient(90deg,transparent,rgba(255,0,85,.45),transparent);
         }
-        .key-lbl {
-            font-size: 9px; font-weight: 700; letter-spacing: 2px;
-            text-transform: uppercase; color: var(--muted); margin-bottom: 9px;
-        }
+        .key-lbl { font-size:9px; font-weight:700; letter-spacing:2px; text-transform:uppercase; color:var(--muted); margin-bottom:9px; }
         .key-val {
-            font-size: 20px; font-weight: 800; color: var(--red);
-            letter-spacing: 2px; word-break: break-all;
-            animation: kglow 2.5s ease-in-out infinite alternate;
+            font-size:20px; font-weight:800; color:var(--red); letter-spacing:2px; word-break:break-all;
+            animation:kg 2.5s ease-in-out infinite alternate;
         }
-        @keyframes kglow {
-            from { text-shadow: 0 0 8px rgba(255,0,85,.4); }
-            to   { text-shadow: 0 0 24px rgba(255,0,85,.9), 0 0 55px rgba(255,0,85,.22); }
-        }
+        @keyframes kg { from{text-shadow:0 0 8px rgba(255,0,85,.4)} to{text-shadow:0 0 24px rgba(255,0,85,.9),0 0 55px rgba(255,0,85,.22)} }
 
-        /* ── COUNTDOWN ROW ────────────────────── */
-        .cd-row {
-            display: flex; align-items: center; justify-content: space-between;
-            padding-top: 11px; margin-top: 11px;
-            border-top: 1px solid rgba(255,255,255,.05);
-        }
-        .cd-lbl  { font-size: 11px; color: var(--muted); }
-        .cd-val  { font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; color: #fff; }
-        .cd-val.warn { color: var(--orange); }
-        .cd-val.crit { color: #ff4444; }
+        /* ── COUNTDOWN ── */
+        .cd-row { display:flex; align-items:center; justify-content:space-between; padding-top:11px; margin-top:11px; border-top:1px solid rgba(255,255,255,.05); }
+        .cd-lbl { font-size:11px; color:var(--muted); }
+        .cd-val { font-size:13px; font-weight:700; font-variant-numeric:tabular-nums; color:#fff; }
+        .cd-val.warn { color:var(--orange); }
+        .cd-val.crit { color:#ff4444; }
 
-        /* ── MAIN BUTTON ──────────────────────── */
+        /* ── BUTTONS ── */
         .btn {
-            display: block; width: 100%;
-            padding: 15px; margin-top: 0;
-            background: linear-gradient(90deg, var(--red), var(--red-dk));
-            color: #fff; border: none; border-radius: 13px;
-            font-size: 13px; font-weight: 800; letter-spacing: 1.2px;
-            text-transform: uppercase; cursor: pointer;
-            box-shadow: 0 4px 20px rgba(255,0,85,.32);
-            position: relative; overflow: hidden;
-            transition: transform .22s cubic-bezier(.16,1,.3,1), box-shadow .22s, opacity .22s;
+            display:block; width:100%; padding:15px;
+            background:linear-gradient(90deg,var(--red),var(--red-dk));
+            color:#fff; border:none; border-radius:13px;
+            font-size:13px; font-weight:800; letter-spacing:1.2px; text-transform:uppercase;
+            cursor:pointer; box-shadow:0 4px 20px rgba(255,0,85,.32);
+            position:relative; overflow:hidden;
+            transition:transform .22s cubic-bezier(.16,1,.3,1), box-shadow .22s;
         }
         .btn::before {
-            content: ''; position: absolute;
-            top: 0; left: -110%; width: 100%; height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,.13), transparent);
-            transition: left .45s ease;
+            content:''; position:absolute; top:0; left:-110%; width:100%; height:100%;
+            background:linear-gradient(90deg,transparent,rgba(255,255,255,.13),transparent);
+            transition:left .45s ease;
         }
-        .btn:not(:disabled):hover::before { left: 110%; }
-        .btn:not(:disabled):hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(255,0,85,.48); }
-        .btn:not(:disabled):active { transform: translateY(1px); }
-        .btn:disabled { opacity: .55; cursor: default; }
+        .btn:hover::before { left:110%; }
+        .btn:hover { transform:translateY(-2px); box-shadow:0 8px 28px rgba(255,0,85,.48); }
+        .btn:active { transform:translateY(1px); }
+        .btn.copied { background:linear-gradient(90deg,#00cc7a,#009e5e); box-shadow:0 4px 20px rgba(0,204,122,.3); }
 
-        .btn.copied { background: linear-gradient(90deg, #00cc7a, #009e5e);
-            box-shadow: 0 4px 20px rgba(0,204,122,.3); }
-
-        .btn.wait { background: linear-gradient(90deg, #333, #222); box-shadow: none; }
-
-        /* ── GHOST BUTTON ─────────────────────── */
         .btn-ghost {
-            display: block; width: 100%;
-            padding: 12px; margin-top: 10px;
-            background: transparent;
-            color: var(--muted); border: 1px solid rgba(255,255,255,.1);
-            border-radius: 13px;
-            font-size: 12px; font-weight: 600; letter-spacing: .5px;
-            cursor: pointer;
-            transition: background .2s, border-color .2s, color .2s;
+            display:block; width:100%; padding:12px; margin-top:10px;
+            background:transparent; color:var(--muted);
+            border:1px solid rgba(255,255,255,.1); border-radius:13px;
+            font-size:12px; font-weight:600; cursor:pointer;
+            transition:background .2s, border-color .2s, color .2s;
         }
-        .btn-ghost:hover { background: rgba(255,255,255,.05); border-color: rgba(255,255,255,.2); color: #fff; }
+        .btn-ghost:hover { background:rgba(255,255,255,.05); border-color:rgba(255,255,255,.2); color:#fff; }
 
-        /* ── LOADER ───────────────────────────── */
-        .loader {
-            display: flex; flex-direction: column; align-items: center;
-            gap: 14px; padding: 28px 0 10px;
+        /* ── LOADER ── */
+        .loader { display:flex; flex-direction:column; align-items:center; gap:14px; padding:28px 0 10px; }
+        .ring { width:40px; height:40px; border:2.5px solid rgba(255,0,85,.15); border-top-color:var(--red); border-radius:50%; animation:spin .72s linear infinite; }
+        @keyframes spin { to { transform:rotate(360deg); } }
+        .loader-txt { font-size:12px; color:var(--muted); }
+
+        /* ── STATE SCREENS ── */
+        .state { text-align:center; padding:10px 0 4px; }
+        .state-ico { font-size:38px; display:block; margin-bottom:12px; }
+        .state-ttl { font-size:16px; font-weight:700; margin-bottom:8px; }
+        .state-ttl.expired { color:var(--orange); }
+        .state-ttl.bad     { color:#ff4444; }
+        .state-ttl.ok      { color:var(--green); }
+        .state-ttl.warn    { color:var(--orange); }
+        .state-desc { font-size:13px; color:var(--muted); line-height:1.8; }
+        .state-desc b  { color:rgba(255,255,255,.8); font-weight:700; }
+        .state-desc .hl { color:var(--orange); font-weight:700; }
+
+        /* ── BYPASS BUTTONS ── */
+        .bypass-hd { text-align:center; margin-bottom:16px; }
+        .bypass-hd .ttl { font-size:15px; font-weight:700; margin-bottom:6px; }
+        .bypass-hd .sub { font-size:12px; color:var(--muted); line-height:1.6; }
+        .bypass-hd .sub b { color:rgba(255,255,255,.7); }
+
+        .bypass-list { display:flex; flex-direction:column; gap:9px; margin:4px 0 14px; }
+
+        .brow {
+            display:flex; align-items:center; gap:12px;
+            width:100%; padding:14px 15px;
+            background:rgba(255,0,85,.06); border:1px solid rgba(255,0,85,.16);
+            border-radius:13px; color:#fff; cursor:pointer; text-align:left;
+            transition:background .2s, border-color .2s, transform .2s;
         }
-        .ring {
-            width: 40px; height: 40px;
-            border: 2.5px solid rgba(255,0,85,.15);
-            border-top-color: var(--red);
-            border-radius: 50%;
-            animation: spin .72s linear infinite;
+        .brow:hover { background:rgba(255,0,85,.13); border-color:rgba(255,0,85,.35); transform:translateX(3px); }
+        .brow:active { transform:translateX(1px); }
+        .brow.used { opacity:.45; pointer-events:none; }
+
+        .bnum { flex-shrink:0; width:28px; height:28px; background:rgba(255,0,85,.2); border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:800; color:var(--red); }
+        .blbl { flex:1; font-size:13px; font-weight:600; }
+        .bsub { font-size:11px; color:var(--muted); margin-top:2px; }
+        .barr { color:var(--muted); font-size:14px; }
+
+        .bypass-note { font-size:11px; color:var(--muted); text-align:center; line-height:1.6; }
+
+        /* ── VERIFYING OVERLAY ── */
+        .verifying {
+            display:flex; flex-direction:column; align-items:center;
+            gap:14px; padding:20px 0 8px; text-align:center;
         }
-        @keyframes spin { to { transform: rotate(360deg); } }
-        .loader-txt { font-size: 12px; color: var(--muted); letter-spacing: .5px; }
+        .verifying p { font-size:13px; color:var(--muted); line-height:1.7; }
 
-        /* ── STATE SCREENS ────────────────────── */
-        .state { text-align: center; padding: 10px 0 4px; }
-        .state-ico { font-size: 38px; display: block; margin-bottom: 12px; }
-        .state-ttl { font-size: 16px; font-weight: 700; margin-bottom: 8px; }
-        .state-ttl.expired { color: var(--orange); }
-        .state-ttl.bad     { color: #ff4444; }
-        .state-ttl.ok      { color: var(--green); }
-        .state-ttl.warn    { color: var(--orange); }
-        .state-desc { font-size: 13px; color: var(--muted); line-height: 1.8; }
-        .state-desc b { color: rgba(255,255,255,.75); font-weight: 700; }
-        .state-desc .hl { color: var(--orange); font-weight: 700; }
+        /* ── EXPIRY NOTE ── */
+        .exp-note { margin-top:13px; font-size:11px; color:var(--muted); text-align:center; line-height:1.6; }
+        .exp-note b { color:rgba(255,255,255,.4); }
 
-        /* ── BYPASS BUTTONS ───────────────────── */
-        .bypass-hd { text-align: center; margin-bottom: 16px; }
-        .bypass-hd p:first-child {
-            font-size: 15px; font-weight: 700; margin-bottom: 6px; color: #fff;
-        }
-        .bypass-hd p:last-child { font-size: 12px; color: var(--muted); line-height: 1.6; }
-        .bypass-hd b { color: rgba(255,255,255,.8); }
-
-        .bypass-list { display: flex; flex-direction: column; gap: 9px; margin: 4px 0 14px; }
-
-        .bypass-row {
-            display: flex; align-items: center; gap: 12px;
-            width: 100%; padding: 14px 15px;
-            background: rgba(255,0,85,.06);
-            border: 1px solid rgba(255,0,85,.16);
-            border-radius: 13px;
-            color: #fff; cursor: pointer; text-align: left;
-            transition: background .2s, border-color .2s, transform .2s;
-        }
-        .bypass-row:hover {
-            background: rgba(255,0,85,.13);
-            border-color: rgba(255,0,85,.35);
-            transform: translateX(3px);
-        }
-        .bypass-row:active { transform: translateX(1px); }
-
-        .bypass-num {
-            flex-shrink: 0;
-            width: 28px; height: 28px;
-            background: rgba(255,0,85,.2); border-radius: 8px;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 12px; font-weight: 800; color: var(--red);
-        }
-        .bypass-lbl  { flex: 1; font-size: 13px; font-weight: 600; }
-        .bypass-sub  { font-size: 11px; color: var(--muted); margin-top: 2px; }
-        .bypass-arr  { color: var(--muted); font-size: 14px; }
-
-        .bypass-note { font-size: 11px; color: var(--muted); text-align: center; line-height: 1.6; }
-
-        /* ── EXPIRY NOTE ──────────────────────── */
-        .exp-note {
-            margin-top: 13px; font-size: 11px; color: var(--muted);
-            text-align: center; line-height: 1.6;
-        }
-        .exp-note b { color: rgba(255,255,255,.4); }
-
-        /* ── FOOTER ───────────────────────────── */
-        .ft {
-            margin-top: 20px; font-size: 10px;
-            color: rgba(255,255,255,.09);
-            text-align: center; letter-spacing: 1.5px; text-transform: uppercase;
-        }
+        /* ── FOOTER ── */
+        .ft { margin-top:20px; font-size:10px; color:rgba(255,255,255,.09); text-align:center; letter-spacing:1.5px; text-transform:uppercase; }
     </style>
 </head>
 <body>
-    <div class="glow-tr"></div>
-    <div class="glow-bl"></div>
+    <div class="glow-a"></div>
+    <div class="glow-b"></div>
 
     <div class="card">
         <div class="hd">
             <div class="hd-icon">🔑</div>
             <div class="hd-name">Chisato</div>
-            <div class="hd-tagline">Access Key System</div>
+            <div class="hd-sub">Access Key System</div>
         </div>
         <div class="sep"></div>
-
         <div id="content">
             <div class="loader">
                 <div class="ring"></div>
-                <p class="loader-txt">Đang kiểm tra thiết bị…</p>
+                <p class="loader-txt">Đang kiểm tra…</p>
             </div>
         </div>
-
         <div class="ft">Chisato System © 2025</div>
     </div>
 
 <script>
-/* ════════════════════════════════════════
-   CẤU HÌNH — chỉnh sửa tại đây
-   ════════════════════════════════════════ */
+/* ══════════════════════════════════════════
+   CONFIG
+══════════════════════════════════════════ */
+// URL gốc của trang — Link4M sẽ redirect về đây sau khi hoàn thành
+const SITE = 'https://nhicode.github.io/apikey/';
 
-// Thay BASE_URL bằng domain bypass của bạn, ví dụ: 'https://loot.link/'
-const BASE_URL = 'https://loot.link/';
-
-const LINKS = [
-    { id: 1, token: '686c94a4ea6afc1d963edcbe', label: 'Đường dẫn 1' },
-    { id: 2, token: '686c954fd1626679a303f9e1', label: 'Đường dẫn 2' },
-    { id: 3, token: '68a5bef8cf162d78244c6702', label: 'Đường dẫn 3' },
+// 3 token Link4M — người dùng chỉ cần vượt 1 trong 3
+const TOKENS = [
+    '686c94a4ea6afc1d963edcbe',
+    '686c954fd1626679a303f9e1',
+    '68a5bef8cf162d78244c6702',
 ];
 
-const MIN_WAIT_MS = 60 * 1000; // 60 giây tối thiểu
-
-/* ════════════════════════════════════════
+/* ══════════════════════════════════════════
    FIREBASE
-   ════════════════════════════════════════ */
-const firebaseConfig = {
-    databaseURL: 'https://apikey-b4435-default-rtdb.firebaseio.com/'
-};
-firebase.initializeApp(firebaseConfig);
+══════════════════════════════════════════ */
+firebase.initializeApp({ databaseURL: 'https://apikey-b4435-default-rtdb.firebaseio.com/' });
 const db = firebase.database();
 
-const uid  = new URLSearchParams(window.location.search).get('uid');
-const $c   = document.getElementById('content');
-let _timer = null;
-
-/* ════════════════════════════════════════
+/* ══════════════════════════════════════════
    ENTRY POINT
-   ════════════════════════════════════════ */
+   Phân tích URL để biết đang ở bước nào
+══════════════════════════════════════════ */
+const params = new URLSearchParams(window.location.search);
+const uid    = params.get('uid');
+const nonce  = params.get('nonce');   // Có nonce = đang quay về từ Link4M
+const $c     = document.getElementById('content');
+let _tick    = null;
+
 if (!uid) {
-    renderInvalid();
+    showInvalid();
+} else if (nonce) {
+    // Quay về từ Link4M → xác minh nonce rồi tạo key
+    verifyAndCreate(nonce);
 } else {
     init();
 }
 
+/* ══════════════════════════════════════════
+   INIT — kiểm tra trạng thái key trong DB
+══════════════════════════════════════════ */
 async function init() {
     try {
-        // Đọc cả key và bypass record cùng lúc
+        const snap = await db.ref('keys/' + uid).once('value');
+        const data = snap.val();
+        const now  = Date.now();
+
+        if (data && data.key) {
+            // UID đã có key trong DB → không bao giờ tạo mới
+            // Dù copy link, mở tab mới, hay F5 đều ra kết quả y hệt
+            data.expires_at > now
+                ? showKey(data.key, data.expires_at, false)
+                : showExpired();
+        } else {
+            // Lần đầu tiên → cho vượt link để tạo key
+            showBypassNeeded();
+        }
+    } catch (_) { showError(); }
+}
+
+/* ══════════════════════════════════════════
+   VERIFY NONCE — gọi sau khi Link4M redirect về
+   Đây là cách xác nhận "đã vượt link thật"
+   không cần countdown 60 giây
+══════════════════════════════════════════ */
+async function verifyAndCreate(incomingNonce) {
+    // Xoá nonce khỏi URL để F5 không verify lại
+    history.replaceState({}, '', `${location.pathname}?uid=${uid}`);
+
+    showVerifying();
+
+    try {
         const [kSnap, bSnap] = await Promise.all([
             db.ref('keys/'   + uid).once('value'),
             db.ref('bypass/' + uid).once('value'),
         ]);
-
         const key    = kSnap.val();
         const bypass = bSnap.val();
         const now    = Date.now();
 
-        /* ── Đã có key ──────────────────────────
-           Dù copy link, tab mới, hay F5 — nếu UID
-           đã tồn tại trong DB thì không bao giờ
-           tạo key mới. Chỉ hiển thị trạng thái. */
-        if (key && key.key) {
-            if (key.expires_at > now) {
-                showKey(key.key, key.expires_at, false);
-            } else {
-                showExpired();
-            }
+        // Nếu đã có key hợp lệ rồi thì hiện luôn (tránh tạo trùng)
+        if (key && key.key && key.expires_at > now) {
+            showKey(key.key, key.expires_at, false);
             return;
         }
 
-        /* ── Đã click bypass trước đó ────────── */
-        if (bypass && bypass.started) {
-            showBypassPending(bypass.link_id, bypass.started);
+        // Kiểm tra nonce có khớp với DB không
+        // → Không khớp: người dùng tự gõ tay, không hợp lệ
+        if (!bypass || bypass.nonce !== incomingNonce) {
+            showBadNonce();
             return;
         }
 
-        /* ── Lần đầu, chưa có gì ─────────────── */
-        showBypassNeeded();
-
-    } catch (err) {
-        showError();
-    }
-}
-
-/* ════════════════════════════════════════
-   ACTIONS
-   ════════════════════════════════════════ */
-
-// Người dùng bấm 1 trong 3 nút → ghi thời gian bắt đầu vào DB, mở link
-async function startBypass(linkId) {
-    try {
-        const started = Date.now();
-        // Lưu trước khi mở để tránh race condition
-        await db.ref('bypass/' + uid).set({ started, link_id: linkId });
-
-        const link = LINKS.find(l => l.id === linkId);
-        window.open(BASE_URL + link.token, '_blank');
-
-        showBypassPending(linkId, started);
-    } catch (err) {
-        showError();
-    }
-}
-
-// Người dùng bấm xác nhận sau khi hoàn thành bypass
-async function verifyBypass() {
-    const verifyBtn = document.getElementById('verifyBtn');
-    if (verifyBtn) { verifyBtn.disabled = true; verifyBtn.textContent = 'Đang kiểm tra…'; }
-
-    try {
-        const snap = await db.ref('bypass/' + uid).once('value');
-        const data = snap.val();
-
-        if (!data || !data.started) { showBypassNeeded(); return; }
-
-        const elapsed = Date.now() - data.started;
-
-        // Kiểm tra thời gian tối thiểu
-        if (elapsed < MIN_WAIT_MS) {
-            showTooFast(MIN_WAIT_MS - elapsed);
-            return;
-        }
-
-        // Tạo key lần đầu và duy nhất
-        const newKey    = 'CHISATO_' + Math.random().toString(36).substring(2, 9).toUpperCase();
-        const expiresAt = Date.now() + 3 * 24 * 60 * 60 * 1000;
+        // Nonce hợp lệ → tạo key và dọn dẹp
+        const newKey    = 'CHISATO_' + rand();
+        const expiresAt = now + 3 * 24 * 60 * 60 * 1000;
 
         await Promise.all([
-            db.ref('keys/'   + uid).set({
-                key:        newKey,
-                expires_at: expiresAt,
-                created_at: Date.now(),
-                status:     'active',
-            }),
-            db.ref('bypass/' + uid).remove(),  // Dọn dẹp bản ghi bypass
+            db.ref('keys/'   + uid).set({ key:newKey, expires_at:expiresAt, created_at:now, status:'active' }),
+            db.ref('bypass/' + uid).remove(),
         ]);
 
         showKey(newKey, expiresAt, true);
 
-    } catch (err) {
-        showError();
-    }
+    } catch (_) { showError(); }
 }
 
-// Người dùng muốn chọn đường dẫn khác
-async function resetBypass() {
+/* ══════════════════════════════════════════
+   START BYPASS — khi bấm 1 trong 3 nút
+   Tạo nonce ngẫu nhiên, lưu DB, redirect
+══════════════════════════════════════════ */
+async function startBypass(idx) {
+    // Disable tất cả nút để tránh double-click
+    document.querySelectorAll('.brow').forEach(b => b.classList.add('used'));
+
     try {
-        await db.ref('bypass/' + uid).remove();
-    } catch (_) {}
-    showBypassNeeded();
+        const n = rand() + rand(); // nonce dài ~14 ký tự
+        await db.ref('bypass/' + uid).set({ nonce:n, link_id:idx, started:Date.now() });
+
+        // Callback URL — sau khi vượt xong, Link4M redirect về đây
+        const callback  = `${SITE}?uid=${encodeURIComponent(uid)}&nonce=${n}`;
+        const link4mUrl = `https://link4m.co/st?api=${TOKENS[idx]}&url=${encodeURIComponent(callback)}`;
+
+        // Chuyển hướng trong cùng tab (giống auth.platorelay.com)
+        window.location.href = link4mUrl;
+
+    } catch (_) { showError(); }
 }
 
-/* ════════════════════════════════════════
-   RENDER FUNCTIONS
-   ════════════════════════════════════════ */
+/* ══════════════════════════════════════════
+   RENDER SCREENS
+══════════════════════════════════════════ */
 
 function showKey(key, expiresAt, isNew) {
     clearTick();
@@ -452,11 +364,11 @@ function showKey(key, expiresAt, isNew) {
         <div style="text-align:center">
             <span class="pill ${isNew ? 'new' : 'ok'}">
                 <span class="pill-dot"></span>
-                ${isNew ? 'Mã mới — đã tạo xong' : 'Đang hoạt động'}
+                ${isNew ? 'Tạo key thành công' : 'Đang hoạt động'}
             </span>
         </div>
         <div class="key-box">
-            <p class="key-lbl">Mã truy cập của bạn</p>
+            <p class="key-lbl">Key của bạn</p>
             <div class="key-val">${key}</div>
             <div class="cd-row">
                 <span class="cd-lbl">⏱ Còn lại</span>
@@ -464,10 +376,40 @@ function showKey(key, expiresAt, isNew) {
             </div>
         </div>
         <button class="btn" id="copyBtn" onclick="doCopy('${key}')">
-            📋 &nbsp;Sao chép mã
+            📋 &nbsp;Sao chép key
         </button>
         <p class="exp-note">Hết hạn lúc: <b>${dtStr}</b></p>`;
     tickKey(expiresAt);
+}
+
+function showBypassNeeded() {
+    clearTick();
+    $c.innerHTML = `
+        <div class="bypass-hd">
+            <p class="ttl">Chưa có key</p>
+            <p class="sub">Hoàn thành <b>1 trong 3</b> đường dẫn bên dưới để tạo key.</p>
+        </div>
+        <div class="bypass-list">
+            ${TOKENS.map((_, i) => `
+            <button class="brow" onclick="startBypass(${i})">
+                <span class="bnum">${i + 1}</span>
+                <div style="flex:1">
+                    <div class="blbl">Đường dẫn ${i + 1}</div>
+                    <div class="bsub">Nhấn để mở</div>
+                </div>
+                <span class="barr">→</span>
+            </button>`).join('')}
+        </div>
+        <p class="bypass-note">Mỗi thiết bị chỉ cần làm 1 lần duy nhất.</p>`;
+}
+
+function showVerifying() {
+    clearTick();
+    $c.innerHTML = `
+        <div class="verifying">
+            <div class="ring"></div>
+            <p>Đang xác minh đường dẫn…<br>Vui lòng đợi một chút.</p>
+        </div>`;
 }
 
 function showExpired() {
@@ -475,75 +417,26 @@ function showExpired() {
     $c.innerHTML = `
         <div class="state">
             <span class="state-ico">🔒</span>
-            <p class="state-ttl expired">Mã đã hết hạn</p>
+            <p class="state-ttl expired">Key đã hết hạn</p>
             <p class="state-desc">
-                Mã truy cập của bạn không còn hiệu lực rồi.<br>
-                Mở <b>ứng dụng</b> và nhấn nút <span class="hl">Lấy key</span><br>
-                để nhận mã mới nhé.
+                Mở <b>ứng dụng</b> và nhấn <span class="hl">Lấy key</span><br>
+                để nhận key mới nhé.
             </p>
         </div>`;
 }
 
-function showBypassNeeded() {
+function showBadNonce() {
     clearTick();
-    $c.innerHTML = `
-        <div class="bypass-hd">
-            <p>Chưa có mã truy cập</p>
-            <p>Hoàn thành <b>1 trong 3</b> đường dẫn bên dưới<br>để tạo mã của bạn — chỉ cần làm 1 lần.</p>
-        </div>
-        <div class="bypass-list">
-            ${LINKS.map(l => `
-            <button class="bypass-row" onclick="startBypass(${l.id})">
-                <span class="bypass-num">${l.id}</span>
-                <div style="flex:1">
-                    <div class="bypass-lbl">${l.label}</div>
-                    <div class="bypass-sub">Nhấn để mở</div>
-                </div>
-                <span class="bypass-arr">→</span>
-            </button>`).join('')}
-        </div>
-        <p class="bypass-note">Mỗi thiết bị chỉ tạo được 1 mã duy nhất.</p>`;
-}
-
-function showBypassPending(linkId, startedTime) {
-    clearTick();
-    const elapsed  = Date.now() - startedTime;
-    const remMs    = Math.max(0, MIN_WAIT_MS - elapsed);
-    const remSec   = Math.ceil(remMs / 1000);
-    const canClick = remSec <= 0;
-
     $c.innerHTML = `
         <div class="state">
-            <span class="state-ico">🌐</span>
-            <p class="state-ttl ok">Đường dẫn ${linkId} đã mở</p>
+            <span class="state-ico">⚠️</span>
+            <p class="state-ttl warn">Xác minh thất bại</p>
             <p class="state-desc">
-                Hoàn thành các bước trong tab vừa mở,<br>
-                rồi quay lại đây bấm xác nhận.
+                Không thể xác nhận đường dẫn này.<br>
+                Vui lòng thử lại từ đầu.
             </p>
         </div>
-        <button class="btn ${canClick ? '' : 'wait'}" id="verifyBtn"
-            ${canClick ? '' : 'disabled'}
-            onclick="verifyBypass()">
-            ${canClick ? '✅ &nbsp;Xác nhận hoàn thành' : `Chờ <span id="vsec">${remSec}</span>s nữa…`}
-        </button>
-        <button class="btn-ghost" onclick="resetBypass()">← Chọn đường dẫn khác</button>`;
-
-    if (!canClick) tickVerify(startedTime);
-}
-
-function showTooFast(remainingMs) {
-    clearTick();
-    const sec = Math.ceil(remainingMs / 1000);
-    $c.innerHTML = `
-        <div class="state">
-            <span class="state-ico">⚡</span>
-            <p class="state-ttl warn">Nhanh quá rồi!</p>
-            <p class="state-desc">
-                Bạn cần ở lại trang bypass ít nhất <b>1 phút</b>.<br>
-                Hãy thử lại và hoàn thành đầy đủ các bước nhé.
-            </p>
-        </div>
-        <button class="btn-ghost" onclick="resetBypass()">← Thử lại từ đầu</button>`;
+        <button class="btn-ghost" onclick="showBypassNeeded()">← Thử lại</button>`;
 }
 
 function showInvalid() {
@@ -551,10 +444,7 @@ function showInvalid() {
         <div class="state">
             <span class="state-ico">🚫</span>
             <p class="state-ttl bad">Không hợp lệ</p>
-            <p class="state-desc">
-                Đường dẫn này thiếu thông tin thiết bị.<br>
-                Vui lòng mở lại từ <b>ứng dụng</b>.
-            </p>
+            <p class="state-desc">Vui lòng mở lại từ <b>ứng dụng</b>.</p>
         </div>`;
 }
 
@@ -563,95 +453,56 @@ function showError() {
         <div class="state">
             <span class="state-ico">⚠️</span>
             <p class="state-ttl bad">Lỗi kết nối</p>
-            <p class="state-desc">
-                Không thể kết nối máy chủ.<br>
-                Kiểm tra mạng rồi thử lại nhé.
-            </p>
+            <p class="state-desc">Kiểm tra mạng rồi thử lại nhé.</p>
         </div>
         <button class="btn-ghost" onclick="location.reload()">↺ Thử lại</button>`;
 }
 
-function renderInvalid() { showInvalid(); }
-
-/* ════════════════════════════════════════
-   TIMERS
-   ════════════════════════════════════════ */
-
-// Countdown trên nút Xác nhận
-function tickVerify(startedTime) {
-    if (_timer) clearInterval(_timer);
-    _timer = setInterval(() => {
-        const rem = MIN_WAIT_MS - (Date.now() - startedTime);
-        const btn = document.getElementById('verifyBtn');
-        const sec = document.getElementById('vsec');
-        if (!btn) { clearInterval(_timer); return; }
-        if (rem <= 0) {
-            clearInterval(_timer);
-            btn.disabled = false;
-            btn.className = 'btn';
-            btn.innerHTML = '✅ &nbsp;Xác nhận hoàn thành';
-        } else if (sec) {
-            sec.textContent = Math.ceil(rem / 1000);
-        }
-    }, 400);
-}
-
-// Countdown trên màn hình key
+/* ══════════════════════════════════════════
+   KEY COUNTDOWN
+══════════════════════════════════════════ */
 function tickKey(expiresAt) {
-    if (_timer) clearInterval(_timer);
-    const tick = () => {
+    if (_tick) clearInterval(_tick);
+    const go = () => {
         const r  = expiresAt - Date.now();
         const el = document.getElementById('cdv');
-        if (!el) { clearInterval(_timer); return; }
-        if (r <= 0) { clearInterval(_timer); showExpired(); return; }
-
+        if (!el) { clearInterval(_tick); return; }
+        if (r <= 0) { clearInterval(_tick); showExpired(); return; }
         const d = Math.floor(r / 86400000);
         const h = Math.floor((r % 86400000) / 3600000);
         const m = Math.floor((r % 3600000)  / 60000);
         const s = Math.floor((r % 60000)    / 1000);
-
-        el.textContent = d > 0
-            ? `${d}n ${p2(h)}:${p2(m)}:${p2(s)}`
-            : `${p2(h)}:${p2(m)}:${p2(s)}`;
-
-        el.className = 'cd-val' + (r < 600000 ? ' crit' : r < 3600000 ? ' warn' : '');
+        el.textContent = d > 0 ? `${d}n ${p2(h)}:${p2(m)}:${p2(s)}` : `${p2(h)}:${p2(m)}:${p2(s)}`;
+        el.className   = 'cd-val' + (r < 600000 ? ' crit' : r < 3600000 ? ' warn' : '');
     };
-    tick();
-    _timer = setInterval(tick, 1000);
+    go(); _tick = setInterval(go, 1000);
 }
 
-function clearTick() {
-    if (_timer) { clearInterval(_timer); _timer = null; }
-}
+function clearTick() { if (_tick) { clearInterval(_tick); _tick = null; } }
 
-function p2(n) { return String(n).padStart(2, '0'); }
+/* ══════════════════════════════════════════
+   UTILS
+══════════════════════════════════════════ */
+function rand()  { return Math.random().toString(36).substring(2, 9); }
+function p2(n)   { return String(n).padStart(2, '0'); }
 
-/* ════════════════════════════════════════
-   COPY
-   ════════════════════════════════════════ */
 function doCopy(key) {
     const flash = () => {
-        const btn = document.getElementById('copyBtn');
-        if (!btn) return;
-        btn.innerHTML = '✅ &nbsp;Đã sao chép!';
-        btn.classList.add('copied');
-        setTimeout(() => {
-            btn.innerHTML = '📋 &nbsp;Sao chép mã';
-            btn.classList.remove('copied');
-        }, 2200);
+        const b = document.getElementById('copyBtn');
+        if (!b) return;
+        b.innerHTML = '✅ &nbsp;Đã sao chép!';
+        b.classList.add('copied');
+        setTimeout(() => { b.innerHTML = '📋 &nbsp;Sao chép key'; b.classList.remove('copied'); }, 2200);
     };
-    if (navigator.clipboard) {
-        navigator.clipboard.writeText(key).then(flash).catch(() => fallback(key, flash));
-    } else {
-        fallback(key, flash);
-    }
-}
-function fallback(key, cb) {
-    const ta = Object.assign(document.createElement('textarea'),
-        { value: key, style: 'position:fixed;left:-9999px' });
-    document.body.append(ta); ta.select();
-    try { document.execCommand('copy'); cb(); } catch (_) {}
-    ta.remove();
+    navigator.clipboard
+        ? navigator.clipboard.writeText(key).then(flash)
+        : (() => {
+            const t = Object.assign(document.createElement('textarea'),
+                { value:key, style:'position:fixed;left:-9999px' });
+            document.body.append(t); t.select();
+            try { document.execCommand('copy'); flash(); } catch(_) {}
+            t.remove();
+          })();
 }
 </script>
 </body>
