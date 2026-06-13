@@ -143,10 +143,13 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    const uid = new URLSearchParams(window.location.search).get('uid');
+    // Lấy UID và Token từ thanh địa chỉ
+    const urlParams = new URLSearchParams(window.location.search);
+    const uid = urlParams.get('uid');
+    const token = urlParams.get('token'); 
     const contentDiv = document.getElementById('content');
 
-    // ĐÃ SỬA: Nếu không có UID, hiện thông báo từ chối thanh lịch, không hiện chữ "Không tìm thấy thiết bị"
+    // 1. Check UID
     if (!uid) {
         contentDiv.innerHTML = '<p class="error-msg">TRUY CẬP KHÔNG HỢP LỆ<br><span style="color:#444; font-size:13px; font-weight:400;">Vui lòng khởi động lại từ ứng dụng chính thức.</span></p>';
     } else {
@@ -158,37 +161,50 @@
         const snap = await ref.once('value');
         const data = snap.val();
         const now = Date.now();
-        const isTabLocked = sessionStorage.getItem('chisato_tab_locked');
 
-        // TRƯỜNG HỢP 1: Còn hạn 3 ngày
+        // TRƯỜNG HỢP 1: Key cũ CÒN HẠN (Luôn hiển thị kể cả khi copy link mới hay F5)
         if (data && data.key && data.expires_at > now) {
-            sessionStorage.setItem('chisato_tab_locked', 'true');
+            // Xóa sạch Token (nếu có) khỏi URL để chống copy
+            if (token) {
+                const cleanUrl = window.location.pathname + '?uid=' + uid;
+                window.history.replaceState(null, '', cleanUrl);
+            }
             renderUI(data.key, data.expires_at, "LIÊN KẾT ĐANG HOẠT ĐỘNG");
             return;
         }
 
-        // TRƯỜNG HỢP 2: Bị khóa do F5 trang khi hết hạn
-        if (isTabLocked) {
-            contentDiv.innerHTML = `
-                <p class="error-msg" style="color: #ff9900;">YÊU CẦU LÀM MỚI TAB</p>
-                <p style="color:#666; font-size:13px; margin-top:10px; line-height:1.5;">Vui lòng <b>đóng hoàn toàn tab cũ</b> này. Sau đó vào lại App bấm nút để nhận mã mới.</p>
-            `;
+        // TRƯỜNG HỢP 2: Token hợp lệ TỪ APP TRUYỀN QUA (Đã vượt link xong) -> TẠO KEY MỚI
+        if (token === "CHISATO_OK") {
+            const randomStr = Math.random().toString(36).substring(2, 9).toUpperCase();
+            const newKey = "CHISATO_" + randomStr;
+            const expireTime = now + (3 * 24 * 60 * 60 * 1000); // 3 ngày
+
+            await ref.set({
+                key: newKey,
+                expires_at: expireTime,
+                status: "active"
+            });
+
+            // Xóa sạch Token khỏi URL ngay lập tức để người khác copy link cũng vô dụng
+            const cleanUrl = window.location.pathname + '?uid=' + uid;
+            window.history.replaceState(null, '', cleanUrl);
+
+            renderUI(newKey, expireTime, "ĐÃ CẤP MÃ TRUY CẬP MỚI");
             return;
         }
 
-        // TRƯỜNG HỢP 3: Cấp Key mới hợp lệ
-        const randomStr = Math.random().toString(36).substring(2, 9).toUpperCase();
-        const newKey = "CHISATO_" + randomStr;
-        const expireTime = now + (3 * 24 * 60 * 60 * 1000); 
-
-        await ref.set({
-            key: newKey,
-            expires_at: expireTime,
-            status: "active"
-        });
-
-        sessionStorage.setItem('chisato_tab_locked', 'true'); 
-        renderUI(newKey, expireTime, "ĐÃ CẤP MÃ TRUY CẬP MỚI");
+        // TRƯỜNG HỢP 3: Mở tab bậy bạ / Không có Token / Đã hết hạn Key
+        if (data && data.expires_at <= now) {
+            contentDiv.innerHTML = `
+                <p class="error-msg" style="color: #ff9900;">BẠN ĐÃ HẾT HẠN KEY</p>
+                <p style="color:#666; font-size:13px; margin-top:10px; line-height:1.5;">Vui lòng <b>vào app để get key</b>.</p>
+            `;
+        } else {
+            contentDiv.innerHTML = `
+                <p class="error-msg" style="color: #ff9900;">YÊU CẦU GET KEY TỪ APP</p>
+                <p style="color:#666; font-size:13px; margin-top:10px; line-height:1.5;">Vui lòng <b>vào lại App bấm nút để nhận mã mới.</b></p>
+            `;
+        }
     }
 
     function renderUI(key, expires_at, msg) {
