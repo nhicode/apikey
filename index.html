@@ -119,7 +119,7 @@
 <div class="box">
     <h2>CHISATO SYSTEM</h2>
     <div id="content">
-        <p style="color: #ff0055; font-size: 14px; letter-spacing: 1px;">Đang định danh thiết bị...</p>
+        <p style="color: #ff0055; font-size: 14px; letter-spacing: 1px;">Đang xác thực thiết bị...</p>
     </div>
 </div>
 
@@ -130,31 +130,32 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // Khởi tạo các biến lấy từ URL
     const urlParams = new URLSearchParams(window.location.search);
     let uid = urlParams.get('uid');
     const token = urlParams.get('token'); 
     const contentDiv = document.getElementById('content');
 
-    // --- CƠ CHẾ ĐỊNH DANH THIẾT BỊ ĐỘC LẬP ---
+    // --- CƠ CHẾ LOGIC UID MỚI ---
     if (uid) {
-        // Có UID từ App gửi tới -> Lưu vĩnh viễn vào máy này
+        // Nếu truy cập có sẵn UID trên URL -> Lưu vào máy
         localStorage.setItem('chisato_device_uid', uid);
     } else {
-        // Người dùng vô thẳng web -> Móc UID trong máy ra kiểm tra
+        // Nếu truy cập không có đuôi UID -> Lôi UID trong máy ra 
         uid = localStorage.getItem('chisato_device_uid');
+        if (uid) {
+            // VÀ TỰ ĐỘNG GẮN ĐUÔI ?uid=... LÊN THANH URL
+            window.history.replaceState(null, '', window.location.pathname + '?uid=' + uid);
+        }
     }
 
-    // NGAY LẬP TỨC: Dọn dẹp thanh URL cho sạch sẽ (Xóa UID và Token trên thanh địa chỉ)
-    // Người khác copy URL lúc này cũng vô dụng vì URL giờ chỉ còn là trang trắng
-    if (window.location.search) {
-        window.history.replaceState(null, '', window.location.pathname);
+    // NẾU CÓ TOKEN (Sau khi vượt link về) -> CHỈ XÓA TOKEN VÀ GIỮ LẠI ĐUÔI UID
+    if (token && uid) {
+        window.history.replaceState(null, '', window.location.pathname + '?uid=' + uid);
     }
 
-    // --- KIỂM TRA ĐẦU VÀO ---
+    // --- BẮT ĐẦU CHECK ---
     if (!uid) {
-        // Hoàn toàn không có thông tin máy -> Đuổi!
-        contentDiv.innerHTML = '<p class="error-msg">THIẾT BỊ CHƯA ĐĂNG KÝ<br><span style="color:#444; font-size:13px; font-weight:400;">Vui lòng mở Tweak để nhận diện thiết bị lần đầu tiên.</span></p>';
+        contentDiv.innerHTML = '<p class="error-msg">THIẾT BỊ CHƯA ĐĂNG KÝ<br><span style="color:#444; font-size:13px; font-weight:400;">Vui lòng mở App để nhận diện thiết bị lần đầu tiên.</span></p>';
     } else {
         processKeySystem();
     }
@@ -165,13 +166,13 @@
         const data = snap.val();
         const now = Date.now();
 
-        // TRƯỜNG HỢP 1: Key cũ CÒN HẠN (Vô web tự lấy UID ra check, thấy còn hạn -> Hiện Key)
+        // TRƯỜNG HỢP 1: Key cũ CÒN HẠN
         if (data && data.key && data.expires_at > now) {
             renderUI(data.key, data.expires_at, "LIÊN KẾT ĐANG HOẠT ĐỘNG");
             return;
         }
 
-        // TRƯỜNG HỢP 2: Có Token từ App gửi sang (Đã vượt link xong) -> TẠO KEY MỚI
+        // TRƯỜNG HỢP 2: Có Token từ App gửi sang -> TẠO KEY MỚI
         if (token === "CHISATO_OK") {
             const randomStr = Math.random().toString(36).substring(2, 9).toUpperCase();
             const newKey = "CHISATO_" + randomStr;
@@ -187,7 +188,7 @@
             return;
         }
 
-        // TRƯỜNG HỢP 3: Hết hạn hoặc mở Web mà không đi qua App
+        // TRƯỜNG HỢP 3: Hết hạn hoặc truy cập không có token vượt link
         if (data && data.expires_at <= now) {
             contentDiv.innerHTML = `
                 <p class="error-msg" style="color: #ff9900;">BẠN ĐÃ HẾT HẠN KEY</p>
@@ -195,8 +196,8 @@
             `;
         } else {
             contentDiv.innerHTML = `
-                <p class="error-msg" style="color: #ff9900;">YÊU CẦU GET KEY TỪ APP</p>
-                <p style="color:#666; font-size:13px; margin-top:10px; line-height:1.5;">Vui lòng <b>vào lại App bấm nút để nhận mã mới.</b></p>
+                <p class="error-msg" style="color: #ff9900;">YÊU CẦU LẤY MÃ</p>
+                <p style="color:#666; font-size:13px; margin-top:10px; line-height:1.5;">Vui lòng <b>vào lại App bấm nút để lấy mã mới.</b></p>
             `;
         }
     }
