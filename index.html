@@ -227,8 +227,9 @@
 /* ══════════════════════════════════════════
    CONFIG
 ══════════════════════════════════════════ */
-// URL gốc của trang — Link4M sẽ redirect về đây sau khi hoàn thành
-const SITE = 'https://nhicode.github.io/apikey/';
+// URL trang hiện tại — tự động lấy theo domain/đường dẫn đang chạy
+// → hoạt động trên MỌI domain mà không cần sửa tay
+const SITE = location.origin + location.pathname;
 
 // 3 token Link4M — người dùng chỉ cần vượt 1 trong 3
 const TOKENS = [
@@ -271,14 +272,13 @@ async function init() {
         const data = snap.val();
         const now  = Date.now();
 
-        if (data && data.key) {
-            // UID đã có key trong DB → không bao giờ tạo mới
-            // Dù copy link, mở tab mới, hay F5 đều ra kết quả y hệt
-            data.expires_at > now
-                ? showKey(data.key, data.expires_at, false)
-                : showExpired();
+        // Chỉ coi là "đã có key" khi có đủ field `key` VÀ còn hạn.
+        // Mọi trường hợp khác (chưa từng có key, key cũ hết hạn,
+        // hoặc record cũ chỉ có status:"active" mà không có key)
+        // đều coi như "chưa có key" → cho vượt link để tạo key mới.
+        if (data && data.key && data.expires_at > now) {
+            showKey(data.key, data.expires_at, false);
         } else {
-            // Lần đầu tiên → cho vượt link để tạo key
             showBypassNeeded();
         }
     } catch (_) { showError(); }
@@ -412,19 +412,6 @@ function showVerifying() {
         </div>`;
 }
 
-function showExpired() {
-    clearTick();
-    $c.innerHTML = `
-        <div class="state">
-            <span class="state-ico">🔒</span>
-            <p class="state-ttl expired">Key đã hết hạn</p>
-            <p class="state-desc">
-                Mở <b>ứng dụng</b> và nhấn <span class="hl">Lấy key</span><br>
-                để nhận key mới nhé.
-            </p>
-        </div>`;
-}
-
 function showBadNonce() {
     clearTick();
     $c.innerHTML = `
@@ -467,7 +454,8 @@ function tickKey(expiresAt) {
         const r  = expiresAt - Date.now();
         const el = document.getElementById('cdv');
         if (!el) { clearInterval(_tick); return; }
-        if (r <= 0) { clearInterval(_tick); showExpired(); return; }
+        // Hết hạn → tự động quay lại màn vượt link ngay trên trang này
+        if (r <= 0) { clearInterval(_tick); showBypassNeeded(); return; }
         const d = Math.floor(r / 86400000);
         const h = Math.floor((r % 86400000) / 3600000);
         const m = Math.floor((r % 3600000)  / 60000);
